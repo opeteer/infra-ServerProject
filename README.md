@@ -8,7 +8,7 @@ File inti server bersifat **permanen**; menambahkan atau menghapus proyek web ti
 
 ## 🏛️ 1. Arsitektur Sistem
 
-Server `rocky` mengadopsi pola **Enterprise Edge Gateway & Centralized Continuous Deployment (CD)**:
+Server `rocky` mengadopsi pola **Enterprise Edge Gateway, Self-Service Provisioning Bot, & Centralized Continuous Deployment (CD)**:
 
 ```mermaid
 flowchart TD
@@ -16,42 +16,36 @@ flowchart TD
     
     subgraph HostServer["🖥️ Server Rocky (infra-ServerProject)"]
         TS --> Proxy["🔀 server-proxy (Nginx Gateway Engine)"]
-        WT["⚙️ server-watchtower (Central CD Webhook Engine)"]
+        WT["⚙️ server-watchtower (Central CD Webhook)"]
+        Bot["🤖 Rocky Provisioning Bot API (:8090)"]
         Net["🌐 Docker Network: server-net"]
         
         Proxy -->|"Path / (Root)"| WebGrafis["🖥️ Dynamic Web Grafis Launchpad<br/>(index.html membaca apps.json)"]
         Proxy -->|"Path /v1/update"| WT
+        Proxy -->|"Path /api/provision"| Bot
         
-        subgraph ModularRoutes["📁 conf.d/routes/ (Plug-in Routes)"]
-            R_SIA["sia.conf"] --> Proxy
-            R_NEW["app-baru.conf"] --> Proxy
-        end
+        Bot -->|"1. Injeksi Rute"| ModularRoutes["📁 conf.d/routes/"]
+        Bot -->|"2. Injeksi Kartu"| AppsJSON["gateway-ui/apps.json"]
+        Bot -->|"3. docker compose up & reload"| Containers["📦 Kontainer Layanan (server-net)"]
         
-        subgraph Containers["📦 Kontainer Layanan (Terhubung ke server-net)"]
-            SIA["sia-web (:8020)"]
-            NEW["app-baru-web (:3000)"]
-        end
-        
-        Proxy --> SIA
-        Proxy --> NEW
-        WT -.->|"Auto-Deploy via /var/run/docker.sock"| SIA
-        WT -.->|"Auto-Deploy via /var/run/docker.sock"| NEW
+        ModularRoutes --> Proxy
+        Proxy --> Containers
+        WT -.->|"Auto-Update via Docker Socket"| Containers
     end
 
     subgraph GitHubEcosystem["🐙 GitHub Repositories (CI/CD)"]
-        RepoSIA["Repo: siaProject"] -->|"Push Image"| GHCR1["ghcr.io/opeteer/sia-web"]
-        RepoNEW["Repo: app-baru"] -->|"Push Image"| GHCR2["ghcr.io/opeteer/app-baru-web"]
-        
-        RepoSIA -.->|"Webhook POST /v1/update"| WT
-        RepoNEW -.->|"Webhook POST /v1/update"| WT
+        Repo["Repo Web Baru"] -->|"1. Push Image"| GHCR["ghcr.io"]
+        Repo -.->|"2. POST /api/provision (Auto-Setup)"| Proxy
+        Repo -.->|"3. POST /v1/update (Auto-Deploy)"| Proxy
     end
 ```
 
 ### Karakteristik Utama Arsitektur:
 1. **Edge Security**: Tailscale Funnel mengisolasi server dari internet publik. Tidak ada port 80/443 yang dibuka di router fisik/IP publik langsung, melainkan melalui tunnel terenkripsi Tailscale.
 2. **Zero-Coupling Gateway**: `server-proxy` (Nginx) memuat rute secara dinamis dari file `conf.d/routes/*.conf`. Kerusakan sintaks pada satu proyek baru tidak akan mempengaruhi proyek lainnya.
-3. **Single Central CD**: Hanya ada **1 instance Watchtower** untuk seluruh server yang mendengarkan endpoint `/v1/update`. Tidak ada overhead duplikasi proses CD.
-4. **Data-Driven Front Door**: Halaman beranda `/` menyajikan Web Grafis yang merender katalog proyek secara otomatis dari data JSON (`apps.json`).
+3. **Zero-Touch Provisioning Bot**: Bot API mandiri di endpoint `/api/provision` membaca payload GitHub Actions dan otomatis mendaftarkan kontainer baru tanpa perlu login ke terminal server.
+4. **Single Central CD**: Hanya ada **1 instance Watchtower** untuk seluruh server yang mendengarkan endpoint `/v1/update`. Tidak ada overhead duplikasi proses CD.
+5. **Data-Driven Front Door**: Halaman beranda `/` menyajikan Web Grafis yang merender katalog proyek secara otomatis dari data JSON (`apps.json`).
 
 ---
 
@@ -302,71 +296,75 @@ sequenceDiagram
 
 ## 🛠️ 5. Panduan Langkah Onboarding (*Step-by-Step Onboarding*)
 
-Ikuti checklist 5 langkah berikut untuk memasang repo baru ke server `rocky`:
-
-### Tahap 1: Konfigurasi di GitHub Repository Baru
-1. Pastikan file `Dockerfile`, `.dockerignore`, dan `.github/workflows/deploy.yml` sudah di-commit dan di-push ke branch `main`.
-2. Masuk ke halaman repo GitHub: `Settings` $\rightarrow$ `Secrets and variables` $\rightarrow$ `Actions` $\rightarrow$ `New repository secret`:
-   * **`WATCHTOWER_TOKEN`**: Isi dengan nilai token yang ada di [.env](file:///home/opeteer/infra-ServerProject/.env) server Anda (`WATCHTOWER_TOKEN`).
-   * **`WATCHTOWER_WEBHOOK_URL`**: Isi dengan base URL Tailscale Funnel server Anda: `https://rocky.<tailnet>.ts.net` (atau `https://rocky.<tailnet>.ts.net/v1/update`).
+Tersedia **2 Metode** untuk mendaftarkan repositori web baru:
 
 ---
 
-### Tahap 2: Konfigurasi di Server Rocky (`infra-ServerProject`)
+### ⚡ METODE 1: 100% Otomatis via Bot (*Rekomendasi - Zero Server Touch*)
+Jika Anda menggunakan file workflow [deploy.yml](file:///home/opeteer/infra-ServerProject/README.md#3-file-github-actions-workflow-zero-touch-githubworkflowsdeployyml) di atas:
+1. **Di GitHub Repo Baru**: Commit file `Dockerfile`, `.dockerignore`, dan `.github/workflows/deploy.yml`.
+2. **Daftarkan 2 Secrets di GitHub** (`Settings` $\rightarrow$ `Secrets and variables` $\rightarrow$ `Actions`):
+   * **`WATCHTOWER_TOKEN`**: Isi token dari [.env](file:///home/opeteer/infra-ServerProject/.env) server Anda.
+   * **`WATCHTOWER_WEBHOOK_URL`**: `https://rocky.<tailnet>.ts.net`
+3. **Lakukan Push**: `git push origin main`.
+4. **SELESAI!** Rocky Provisioning Bot akan otomatis mendaftarkan kontainer di `compose.yaml`, membuat rute Nginx, mendaftarkan kartu di dashboard, menyalakan kontainer, dan memuat ulang Nginx. Anda **tidak perlu membuka server sama sekali**.
 
-#### Langkah A: Daftarkan Kontainer di [compose.yaml](file:///home/opeteer/infra-ServerProject/compose.yaml)
-Buka [compose.yaml](file:///home/opeteer/infra-ServerProject/compose.yaml) dan tambahkan kontainer aplikasi baru di bawah jaringan `server-net`:
+---
 
-```yaml
-  nama-proyek:
-    image: ghcr.io/username/nama-proyek:latest
-    container_name: nama-proyek-web
-    restart: unless-stopped
-    networks:
-      - server-net
-    environment:
-      - PORT=3000
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"  # Wajib untuk Central CD
-```
-*Jalankan kontainer:*
+### 🔧 METODE 2: Manual via CLI Script / Server (*Alternatif*)
+Gunakan metode ini jika Anda ingin mendaftarkan aplikasi secara manual dari terminal server Rocky:
+
+#### Opsi 2A: Menggunakan Skrip Otomasi Cepat (1 Detik)
+Cukup jalankan satu baris perintah di server:
 ```bash
-docker compose up -d nama-proyek
+./funnel.sh register \
+  --name "nama-proyek" \
+  --image "ghcr.io/username/nama-proyek:latest" \
+  --port 3000 \
+  --path "/nama-proyek/" \
+  --icon "🚀" \
+  --desc "Deskripsi singkat aplikasi"
 ```
 
-#### Langkah B: Buat File Route Mandiri di `conf.d/routes/`
-Buat file baru di `infra-ServerProject/conf.d/routes/<nama-proyek>.conf`:
-
-```nginx
-location /nama-proyek/ {
-    proxy_pass http://nama-proyek-web:3000/;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Prefix /nama-proyek;
-}
-```
-
-#### Langkah C: Daftarkan di Web Grafis ([`gateway-ui/apps.json`](file:///home/opeteer/infra-ServerProject/gateway-ui/apps.json))
-Buka [gateway-ui/apps.json](file:///home/opeteer/infra-ServerProject/gateway-ui/apps.json) dan tambahkan 1 entri aplikasi:
-
-```json
-{
-  "id": "nama-proyek",
-  "name": "Nama Proyek Web Anda",
-  "path": "/nama-proyek/",
-  "icon": "🚀",
-  "desc": "Deskripsi singkat layanan baru ini.",
-  "tags": ["Node.js", "Tailwind", "PostgreSQL"],
-  "status": "Live"
-}
-```
-
-#### Langkah D: Muat Ulang Gateway (Zero-Downtime)
-```bash
-./funnel.sh reload
-```
+#### Opsi 2B: Manual Step-by-Step
+1. **Daftarkan Kontainer di [compose.yaml](file:///home/opeteer/infra-ServerProject/compose.yaml)** di bawah network `server-net`:
+   ```yaml
+     nama-proyek:
+       image: ghcr.io/username/nama-proyek:latest
+       container_name: nama-proyek-web
+       restart: unless-stopped
+       networks:
+         - server-net
+       environment:
+         - PORT=3000
+       labels:
+         - "com.centurylinklabs.watchtower.enable=true"
+   ```
+   Lalu jalankan: `docker compose up -d nama-proyek`
+2. **Buat File Rute Mandiri** di `conf.d/routes/<nama-proyek>.conf`:
+   ```nginx
+   location /nama-proyek/ {
+       proxy_pass http://nama-proyek-web:3000/;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+   }
+   ```
+3. **Daftarkan Kartu di [gateway-ui/apps.json](file:///home/opeteer/infra-ServerProject/gateway-ui/apps.json)**:
+   ```json
+   {
+     "id": "nama-proyek",
+     "name": "Nama Proyek Web Anda",
+     "path": "/nama-proyek/",
+     "icon": "🚀",
+     "desc": "Deskripsi singkat layanan baru ini.",
+     "tags": ["Node.js", "Tailwind", "PostgreSQL"],
+     "status": "Live"
+   }
+   ```
+4. **Muat Ulang Gateway**:
+   ```bash
+   ./funnel.sh reload
+   ```
 
 **Selesai!** 
 * Web langsung muncul di Launchpad beranda `https://rocky...ts.net/`.

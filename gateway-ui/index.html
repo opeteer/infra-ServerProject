@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rocky Gateway &bull; Service Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+            },
+            server: {
+              card: '#1e293b',
+              border: '#334155',
+              darkbg: '#0f172a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .pulse-dot {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulse-ring 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulse-ring {
+      to {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-black">
+  <!-- Subtle background glow -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 -right-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-10">
+    <!-- Server Header -->
+    <header class="glass rounded-2xl p-6 sm:p-8 mb-8 shadow-2xl">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">rocky<span class="text-emerald-400">.gateway</span></h1>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 pulse-dot"></span>
+                ONLINE
+              </span>
+            </div>
+            <p class="text-slate-400 text-sm mt-0.5">Central Reverse Proxy &amp; Service Launchpad</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 font-mono text-xs text-slate-300">
+          <div class="bg-slate-900/80 px-3.5 py-2 rounded-lg border border-slate-800 flex items-center gap-2">
+            <span class="text-slate-500">Node:</span>
+            <span class="text-emerald-400 font-semibold">rocky</span>
+          </div>
+          <div class="bg-slate-900/80 px-3.5 py-2 rounded-lg border border-slate-800 flex items-center gap-2">
+            <span class="text-slate-500">Tunnel:</span>
+            <span class="text-cyan-400 font-semibold">Tailscale Funnel</span>
+          </div>
+          <div class="bg-slate-900/80 px-3.5 py-2 rounded-lg border border-slate-800 flex items-center gap-2">
+            <span class="text-slate-500">CD Engine:</span>
+            <span class="text-amber-400 font-semibold">Watchtower</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Services Section -->
+    <main class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-200 tracking-wide uppercase flex items-center gap-2">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          Layanan Web Internal Aktif
+        </h2>
+        <span class="text-xs text-slate-400">Total Proyek: <strong class="text-slate-200">1 Web + 1 CD</strong></span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Service Card 1: SIA USD -->
+        <div class="glass rounded-xl p-6 hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between group shadow-lg">
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="w-12 h-12 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xl">
+                🎓
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live
+              </span>
+            </div>
+
+            <h3 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
+              SIA USD Portal
+            </h3>
+            <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+              Portal Akademik Mahasiswa Universitas Sanata Dharma. Terintegrasi dengan jadwal kuliah, KRS, tagihan, dan e-KTM.
+            </p>
+
+            <!-- Tech Badges -->
+            <div class="flex flex-wrap gap-1.5 mt-4">
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Spring Boot 3</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">React 18</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">PostgreSQL</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Vite</span>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="font-mono text-xs text-slate-500">Path: /sia/</span>
+            <a href="/sia/" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-md shadow-emerald-500/20">
+              Buka Web
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Service Card 2: Central Watchtower CD Engine -->
+        <div class="glass rounded-xl p-6 hover:border-amber-500/50 transition-all duration-300 flex flex-col justify-between group shadow-lg">
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="w-12 h-12 rounded-lg bg-amber-600/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xl">
+                ⚙️
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span> Central CD
+              </span>
+            </div>
+
+            <h3 class="text-xl font-bold text-white group-hover:text-amber-400 transition-colors">
+              Server Watchtower
+            </h3>
+            <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+              Pusat otomatisasi deployment via webhook HTTP. Menerima sinyal deploy dari seluruh repositori GitHub Actions secara terpusat.
+            </p>
+
+            <!-- Tech Badges -->
+            <div class="flex flex-wrap gap-1.5 mt-4">
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Containrrr</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">HTTP Webhook</span>
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Docker Sock</span>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="font-mono text-xs text-slate-500">POST /v1/update</span>
+            <span class="text-xs text-slate-400 font-mono">Bearer Token Auth</span>
+          </div>
+        </div>
+
+        <!-- Service Card 3: Placeholder for Future Repos -->
+        <div class="glass rounded-xl p-6 border-dashed border-2 border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between shadow-lg">
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="w-12 h-12 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center font-bold text-xl">
+                ➕
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                Tersedia
+              </span>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-300">
+              Proyek Baru Berikutnya
+            </h3>
+            <p class="text-slate-500 text-sm mt-2 leading-relaxed">
+              Siap menampung repo baru. Ikuti panduan onboarding di README server untuk mendaftarkan web app baru Anda ke gateway ini.
+            </p>
+
+            <div class="mt-4 p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-400 font-mono">
+              1. Build Docker image di GHCR<br/>
+              2. Tambah service di compose.yaml<br/>
+              3. Tambah route di nginx.conf
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="font-mono text-xs text-slate-600">Path: /nama-proyek/</span>
+            <span class="text-xs text-slate-500 font-medium">Ready</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer System Info -->
+    <footer class="mt-12 text-center text-xs text-slate-500 font-mono">
+      <p>&copy; 2026 Server Rocky &bull; Powered by Nginx, Docker &amp; Tailscale Funnel</p>
+    </footer>
+  </div>
+</body>
+</html>

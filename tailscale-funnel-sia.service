@@ -1,14 +1,14 @@
 [Unit]
-Description=Tailscale Funnel Auto-Starter for SIA Project
+Description=Tailscale Funnel Auto-Starter for Rocky Server Gateway
 After=network-online.target tailscaled.service docker.service
 Wants=network-online.target tailscaled.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/home/opeteer/infra-siaProject
-ExecStart=/home/opeteer/infra-siaProject/funnel.sh start
-ExecStop=/home/opeteer/infra-siaProject/funnel.sh stop
+WorkingDirectory=/home/opeteer/infra-ServerProject
+ExecStart=/home/opeteer/infra-ServerProject/funnel.sh start
+ExecStop=/home/opeteer/infra-ServerProject/funnel.sh stop
 TimeoutStartSec=60
 
 [Install]

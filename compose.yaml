@@ -34,7 +34,7 @@ services:
 
   watchtower:
     image: containrrr/watchtower:latest
-    container_name: sia-watchtower
+    container_name: server-watchtower
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -48,12 +48,13 @@ services:
 
   proxy:
     image: nginx:alpine
-    container_name: sia-proxy
+    container_name: server-proxy
     restart: unless-stopped
     ports:
       - "${PROXY_BIND_IP:-127.0.0.1}:${PROXY_PORT:-8080}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./gateway-ui:/usr/share/nginx/html/gateway:ro
     depends_on:
       - web
       - watchtower

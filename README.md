@@ -228,7 +228,7 @@ jobs:
           BASE_URL="${WATCHTOWER_URL%/v1/update}"
           echo "🤖 Menghubungi Rocky Provisioning Bot di ${BASE_URL}/api/provision..."
           
-          # Payload otomatis membaca nama repo Anda
+          # Payload otomatis membaca nama repo Anda (Mendukung WebSocket & Persistent Volume)
           curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
             -H "Content-Type: application/json" \
@@ -240,7 +240,10 @@ jobs:
               "path": "/${{ github.event.repository.name }}/",
               "icon": "🚀",
               "desc": "Aplikasi ${{ github.event.repository.name }} di server rocky.",
-              "tags": "Web,Docker,AutoDeployed"
+              "tags": "Web,Docker,AutoDeployed",
+              "websocket": false,
+              "volumes": [],
+              "env": []
             }' \
             "${BASE_URL}/api/provision" || true
           
@@ -409,8 +412,19 @@ Jika Anda membangun **Bot Anda Sendiri** (Telegram Bot, Discord Bot, Webhook Ser
   --icon "💳" \
   --desc "Aplikasi Kasir POS & Inventaris" \
   --tags "Node.js,Vue,PostgreSQL" \
+  --websocket \
+  --volume "kasir_data:/app/data" \
+  --env "APP_SECRET=rahasia123" \
+  --preserve \
   --json-output
 ```
+
+> **Catatan Fitur V2**:
+> - `--websocket`: Mengaktifkan header `Upgrade`, `$connection_upgrade`, `proxy_buffering off`, dan streaming timeout 600s pada Nginx route.
+> - `--volume` (`-v`): Mendaftarkan volume persisten. Named volume otomatis didaftarkan ke blok root `volumes:`.
+> - `--env` (`-e`): Menyuntikkan environment variable tambahan ke service kontainer.
+> - `--preserve`: Mempertahankan konfigurasi service, volume, env, dan route kustom lama tanpa menimpa secara destruktif (default: `True`).
+> - `--force`: Memaksa penulisan ulang file rute Nginx jika file sudah ada sebelumnya.
 
 ### B. Format Output JSON yang Diterima Bot Anda
 Skrip akan mengembalikan respons JSON terstruktur dengan *exit code* `0` (sukses) atau `1` (gagal):

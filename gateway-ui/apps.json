@@ -5,7 +5,12 @@
     "path": "/sia/",
     "icon": "🎓",
     "desc": "Portal Akademik Mahasiswa Universitas Sanata Dharma. Terintegrasi dengan jadwal kuliah, KRS, tagihan, dan e-KTM.",
-    "tags": ["Spring Boot 3", "React 18", "PostgreSQL", "Vite"],
+    "tags": [
+      "Spring Boot 3",
+      "React 18",
+      "PostgreSQL",
+      "Vite"
+    ],
     "status": "Live",
     "color": "emerald"
   },
@@ -15,7 +20,13 @@
     "path": "/nimbus/",
     "icon": "⚡",
     "desc": "Platform self-hosted media & video downloader modern bertenaga yt-dlp, FastAPI, dan WebSockets.",
-    "tags": ["FastAPI", "Python 3.12", "yt-dlp", "GHCR", "Alpine"],
+    "tags": [
+      "FastAPI",
+      "Python 3.12",
+      "yt-dlp",
+      "GHCR",
+      "Alpine"
+    ],
     "status": "Live",
     "color": "cyan"
   }

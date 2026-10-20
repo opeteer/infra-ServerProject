@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 ==============================================================================
-Rocky Provisioning Bot - Webhook API Service
+Rocky Provisioning Bot - Webhook API Service (V2 - Concurrency-Safe & Extended)
 ==============================================================================
 Bot ini mendengarkan request HTTP POST dari GitHub Actions untuk secara
 otomatis mendaftarkan, mengkonfigurasi, dan menyalakan kontainer baru di server.
-Zero-Touch Provisioning (Meniadakan Bagian B secara 100%).
+Zero-Touch Provisioning (Meniadakan konfigurasi manual gateway & compose).
 ==============================================================================
 """
 
@@ -13,6 +13,7 @@ import os
 import sys
 import json
 import logging
+import threading
 import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
@@ -27,6 +28,9 @@ logging.basicConfig(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REGISTER_SCRIPT = os.path.join(BASE_DIR, 'register-app.py')
 ENV_FILE = os.path.join(BASE_DIR, '.env')
+
+# Global concurrency lock untuk memastikan eksekusi register-app.py berjalan serial (atomic)
+provision_lock = threading.Lock()
 
 def load_env():
     env_vars = {}
@@ -62,7 +66,7 @@ class ProvisionRequestHandler(BaseHTTPRequestHandler):
             self.send_json(200, {
                 "status": "online",
                 "service": "Rocky Provisioning Bot API",
-                "version": "1.0.0",
+                "version": "2.0.0",
                 "message": "Ready to receive provisioning requests from GitHub Actions"
             })
         else:
@@ -120,9 +124,30 @@ class ProvisionRequestHandler(BaseHTTPRequestHandler):
         if isinstance(tags, list):
             tags = ','.join(tags)
 
-        logging.info(f"Received provisioning request for app: '{app_name}' (Image: {image}, Port: {port})")
+        # Extended fields: WebSocket, Volumes, Environment, Flags
+        websocket = payload.get('websocket', False)
+        if isinstance(websocket, str):
+            websocket = websocket.lower() in ['true', '1', 'yes']
 
-        # 4. Panggil register-app.py
+        volumes = payload.get('volumes', [])
+        if isinstance(volumes, str):
+            volumes = [v.strip() for v in volumes.split(',') if v.strip()]
+
+        custom_env = payload.get('env', []) or payload.get('environment', [])
+        if isinstance(custom_env, dict):
+            custom_env = [f"{k}={v}" for k, v in custom_env.items()]
+        elif isinstance(custom_env, str):
+            custom_env = [e.strip() for e in custom_env.split(',') if e.strip()]
+
+        preserve = payload.get('preserve', True)
+        force = payload.get('force', False)
+
+        logging.info(
+            f"Received provisioning request for app: '{app_name}' "
+            f"(Image: {image}, Port: {port}, WS: {websocket}, Vols: {len(volumes)}, Env: {len(custom_env)})"
+        )
+
+        # 4. Susun Argumen CLI register-app.py
         cmd = [
             sys.executable,
             REGISTER_SCRIPT,
@@ -137,9 +162,27 @@ class ProvisionRequestHandler(BaseHTTPRequestHandler):
             '--json-output'
         ]
 
+        if websocket:
+            cmd.append('--websocket')
+
+        if not preserve:
+            cmd.append('--no-preserve')
+
+        if force:
+            cmd.append('--force')
+
+        for vol in volumes:
+            cmd.extend(['--volume', str(vol)])
+
+        for env_item in custom_env:
+            cmd.extend(['--env', str(env_item)])
+
+        # 5. Eksekusi register-app.py di bawah perlindungan Mutex Lock
         try:
-            proc = subprocess.run(cmd, cwd=BASE_DIR, capture_output=True, text=True, check=True)
-            output_json = json.loads(proc.stdout)
+            with provision_lock:
+                proc = subprocess.run(cmd, cwd=BASE_DIR, capture_output=True, text=True, check=True)
+                output_json = json.loads(proc.stdout)
+
             logging.info(f"App '{app_name}' successfully provisioned and deployed!")
             self.send_json(200, output_json)
 

@@ -1,3 +1,7 @@
 .env
 *.log
 *.zip
+*.lock
+.compose.lock
+__pycache__/
+*.tmp

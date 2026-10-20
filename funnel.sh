@@ -107,13 +107,17 @@ case "$1" in
   reload)
     reload_gateway
     ;;
+  register)
+    shift
+    python3 "$DIR/register-app.py" "$@"
+    ;;
   restart)
     stop_funnel
     sleep 1
     start_funnel
     ;;
   *)
-    echo "Penggunaan: $0 {start|stop|status|reload|restart}"
+    echo "Penggunaan: $0 {start|stop|status|reload|register|restart}"
     exit 1
     ;;
 esac

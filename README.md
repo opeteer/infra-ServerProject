@@ -366,6 +366,72 @@ Buka [gateway-ui/apps.json](file:///home/opeteer/infra-ServerProject/gateway-ui/
 # Hot-reload Nginx saat ada rute/app baru tanpa downtime
 ./funnel.sh reload
 
+# Mendaftarkan aplikasi baru via CLI
+./funnel.sh register --name "kasir" --image "ghcr.io/opeteer/kasir:latest" --port 3000 --path "/kasir/"
+
 # Menghentikan Tailscale Funnel
 ./funnel.sh stop
 ```
+
+---
+
+## 🤖 7. Integrasi Bot Otomasi Mandiri (*Custom ChatOps / Provisioning Bot*)
+
+Jika Anda membangun **Bot Anda Sendiri** (Telegram Bot, Discord Bot, Webhook Service, atau CLI Assistant), bot Anda cukup mengeksekusi skrip [`register-app.sh`](file:///home/opeteer/infra-ServerProject/register-app.sh) di server:
+
+### A. Perintah yang Dipanggil oleh Bot Anda
+```bash
+./register-app.sh \
+  --name "kasir" \
+  --title "Sistem Kasir Toko" \
+  --image "ghcr.io/opeteer/kasir:latest" \
+  --port 3000 \
+  --path "/kasir/" \
+  --icon "💳" \
+  --desc "Aplikasi Kasir POS & Inventaris" \
+  --tags "Node.js,Vue,PostgreSQL" \
+  --json-output
+```
+
+### B. Format Output JSON yang Diterima Bot Anda
+Skrip akan mengembalikan respons JSON terstruktur dengan *exit code* `0` (sukses) atau `1` (gagal):
+
+```json
+{
+  "status": "success",
+  "app_id": "kasir",
+  "name": "Sistem Kasir Toko",
+  "path": "/kasir/",
+  "image": "ghcr.io/opeteer/kasir:latest",
+  "port": 3000,
+  "container_started": true,
+  "reload_ok": true,
+  "message": "Aplikasi 'Sistem Kasir Toko' berhasil didaftarkan dan aktif di subpath /kasir/!"
+}
+```
+
+### C. Contoh Integrasi Singkat di Bot Anda (Python):
+```python
+import subprocess
+import json
+
+def register_new_app(name, image, port, path, icon="🚀"):
+    cmd = [
+        "/home/opeteer/infra-ServerProject/register-app.sh",
+        "--name", name,
+        "--image", image,
+        "--port", str(port),
+        "--path", path,
+        "--icon", icon,
+        "--json-output"
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    data = json.loads(res.stdout)
+    
+    if data.get("status") == "success":
+        return f"✅ Berhasil! Web Anda sudah aktif di: https://rocky.ts.net{data['path']}"
+    else:
+        return f"❌ Gagal: {data.get('error')}"
+```
+Dengan skrip ini, bot Anda cukup memanggil 1 baris perintah subprocess dan seluruh proses konfigurasi server langsung selesai secara instan!
+

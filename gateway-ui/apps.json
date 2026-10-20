@@ -1,0 +1,12 @@
+[
+  {
+    "id": "sia-usd",
+    "name": "SIA USD Portal",
+    "path": "/sia/",
+    "icon": "🎓",
+    "desc": "Portal Akademik Mahasiswa Universitas Sanata Dharma. Terintegrasi dengan jadwal kuliah, KRS, tagihan, dan e-KTM.",
+    "tags": ["Spring Boot 3", "React 18", "PostgreSQL", "Vite"],
+    "status": "Live",
+    "color": "emerald"
+  }
+]

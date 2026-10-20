@@ -78,6 +78,22 @@ status_funnel() {
   run_tailscale funnel status
 }
 
+reload_gateway() {
+  echo "🔄 Mereload konfigurasi Nginx Gateway secara dinamis..."
+  if command -v docker >/dev/null 2>&1; then
+    if docker exec server-proxy nginx -t >/dev/null 2>&1; then
+      docker exec server-proxy nginx -s reload
+      echo "✅ Rute Nginx berhasil dimuat ulang secara instan tanpa downtime!"
+    else
+      echo "❌ Validasi konfigurasi Nginx gagal:"
+      docker exec server-proxy nginx -t || true
+      exit 1
+    fi
+  else
+    echo "⚠️ Docker tidak ditemukan di PATH."
+  fi
+}
+
 case "$1" in
   start|"")
     start_funnel
@@ -88,13 +104,16 @@ case "$1" in
   status)
     status_funnel
     ;;
+  reload)
+    reload_gateway
+    ;;
   restart)
     stop_funnel
     sleep 1
     start_funnel
     ;;
   *)
-    echo "Penggunaan: $0 {start|stop|status|restart}"
+    echo "Penggunaan: $0 {start|stop|status|reload|restart}"
     exit 1
     ;;
 esac

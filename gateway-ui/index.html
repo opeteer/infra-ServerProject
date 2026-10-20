@@ -16,18 +16,6 @@
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            brand: {
-              50: '#f0fdf4',
-              500: '#22c55e',
-              600: '#16a34a',
-            },
-            server: {
-              card: '#1e293b',
-              border: '#334155',
-              darkbg: '#0f172a',
-            }
           }
         }
       }
@@ -76,7 +64,7 @@
                 ONLINE
               </span>
             </div>
-            <p class="text-slate-400 text-sm mt-0.5">Central Reverse Proxy &amp; Service Launchpad</p>
+            <p class="text-slate-400 text-sm mt-0.5">Central Reverse Proxy &amp; Modular Service Launchpad</p>
           </div>
         </div>
 
@@ -106,50 +94,26 @@
           </svg>
           Layanan Web Internal Aktif
         </h2>
-        <span class="text-xs text-slate-400">Total Proyek: <strong class="text-slate-200">1 Web + 1 CD</strong></span>
+        <span id="app-counter" class="text-xs text-slate-400 font-mono">Memuat katalog...</span>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Service Card 1: SIA USD -->
-        <div class="glass rounded-xl p-6 hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between group shadow-lg">
-          <div>
-            <div class="flex items-start justify-between mb-4">
-              <div class="w-12 h-12 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xl">
-                🎓
-              </div>
-              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live
-              </span>
-            </div>
+      <!-- Dynamic Grid Container -->
+      <div id="services-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Apps will be dynamically injected here via JavaScript from apps.json -->
+      </div>
+    </main>
 
-            <h3 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
-              SIA USD Portal
-            </h3>
-            <p class="text-slate-400 text-sm mt-2 leading-relaxed">
-              Portal Akademik Mahasiswa Universitas Sanata Dharma. Terintegrasi dengan jadwal kuliah, KRS, tagihan, dan e-KTM.
-            </p>
+    <!-- Footer System Info -->
+    <footer class="mt-12 text-center text-xs text-slate-500 font-mono space-y-1">
+      <p>&copy; 2026 Server Rocky &bull; Modular Gateway powered by Nginx &amp; Tailscale Funnel</p>
+      <p class="text-slate-600">Tambah web baru tanpa edit kode: cukup tambahkan entri di <code>apps.json</code> &amp; route di <code>conf.d/routes/</code></p>
+    </footer>
+  </div>
 
-            <!-- Tech Badges -->
-            <div class="flex flex-wrap gap-1.5 mt-4">
-              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Spring Boot 3</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">React 18</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">PostgreSQL</span>
-              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Vite</span>
-            </div>
-          </div>
-
-          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-            <span class="font-mono text-xs text-slate-500">Path: /sia/</span>
-            <a href="/sia/" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-md shadow-emerald-500/20">
-              Buka Web
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-              </svg>
-            </a>
-          </div>
-        </div>
-
-        <!-- Service Card 2: Central Watchtower CD Engine -->
+  <script>
+    // Template for Central Watchtower Card (Permanent)
+    function renderWatchtowerCard() {
+      return `
         <div class="glass rounded-xl p-6 hover:border-amber-500/50 transition-all duration-300 flex flex-col justify-between group shadow-lg">
           <div>
             <div class="flex items-start justify-between mb-4">
@@ -168,7 +132,6 @@
               Pusat otomatisasi deployment via webhook HTTP. Menerima sinyal deploy dari seluruh repositori GitHub Actions secara terpusat.
             </p>
 
-            <!-- Tech Badges -->
             <div class="flex flex-wrap gap-1.5 mt-4">
               <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Containrrr</span>
               <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">HTTP Webhook</span>
@@ -181,8 +144,12 @@
             <span class="text-xs text-slate-400 font-mono">Bearer Token Auth</span>
           </div>
         </div>
+      `;
+    }
 
-        <!-- Service Card 3: Placeholder for Future Repos -->
+    // Template for "+ Daftarkan Proyek Baru" Card (Permanent placeholder)
+    function renderPlaceholderCard() {
+      return `
         <div class="glass rounded-xl p-6 border-dashed border-2 border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between shadow-lg">
           <div>
             <div class="flex items-start justify-between mb-4">
@@ -190,36 +157,105 @@
                 ➕
               </div>
               <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-                Tersedia
+                Slot Tersedia
               </span>
             </div>
 
             <h3 class="text-xl font-bold text-slate-300">
-              Proyek Baru Berikutnya
+              Daftarkan Proyek Baru
             </h3>
             <p class="text-slate-500 text-sm mt-2 leading-relaxed">
-              Siap menampung repo baru. Ikuti panduan onboarding di README server untuk mendaftarkan web app baru Anda ke gateway ini.
+              Arsitektur modular siap menampung repo baru Anda dalam hitungan detik. Cukup tambah 1 entri di <code>apps.json</code> dan 1 file di <code>conf.d/routes/</code>.
             </p>
 
-            <div class="mt-4 p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-400 font-mono">
+            <div class="mt-4 p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-400 font-mono leading-relaxed">
               1. Build Docker image di GHCR<br/>
-              2. Tambah service di compose.yaml<br/>
-              3. Tambah route di nginx.conf
+              2. Buat route di conf.d/routes/<br/>
+              3. Tambah data di apps.json
             </div>
           </div>
 
           <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-            <span class="font-mono text-xs text-slate-600">Path: /nama-proyek/</span>
-            <span class="text-xs text-slate-500 font-medium">Ready</span>
+            <span class="font-mono text-xs text-slate-600">Plug &amp; Play</span>
+            <span class="text-xs text-emerald-400 font-medium">Ready</span>
           </div>
         </div>
-      </div>
-    </main>
+      `;
+    }
 
-    <!-- Footer System Info -->
-    <footer class="mt-12 text-center text-xs text-slate-500 font-mono">
-      <p>&copy; 2026 Server Rocky &bull; Powered by Nginx, Docker &amp; Tailscale Funnel</p>
-    </footer>
-  </div>
+    // Template for a dynamic App Card from apps.json
+    function renderAppCard(app) {
+      const tagsHtml = (app.tags || []).map(tag => 
+        `<span class="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700">${tag}</span>`
+      ).join('');
+
+      return `
+        <div class="glass rounded-xl p-6 hover:border-emerald-500/50 transition-all duration-300 flex flex-col justify-between group shadow-lg">
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="w-12 h-12 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-xl">
+                ${app.icon || '🌐'}
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> ${app.status || 'Live'}
+              </span>
+            </div>
+
+            <h3 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors">
+              ${app.name}
+            </h3>
+            <p class="text-slate-400 text-sm mt-2 leading-relaxed">
+              ${app.desc}
+            </p>
+
+            <div class="flex flex-wrap gap-1.5 mt-4">
+              ${tagsHtml}
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span class="font-mono text-xs text-slate-500">Path: ${app.path}</span>
+            <a href="${app.path}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-md shadow-emerald-500/20">
+              Buka Web
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadCatalog() {
+      const grid = document.getElementById('services-grid');
+      const counter = document.getElementById('app-counter');
+      try {
+        const res = await fetch('/apps.json');
+        if (!res.ok) throw new Error('apps.json not found');
+        const apps = await res.json();
+
+        let cardsHtml = apps.map(renderAppCard).join('');
+        cardsHtml += renderWatchtowerCard();
+        cardsHtml += renderPlaceholderCard();
+
+        grid.innerHTML = cardsHtml;
+        counter.innerHTML = `Total Proyek: <strong class="text-slate-200">${apps.length} Web + 1 Central CD</strong>`;
+      } catch (err) {
+        console.warn('Fallback loading catalog:', err);
+        // Fallback default if fetch fails
+        grid.innerHTML = renderAppCard({
+          name: 'SIA USD Portal',
+          path: '/sia/',
+          icon: '🎓',
+          desc: 'Portal Akademik Mahasiswa Universitas Sanata Dharma.',
+          tags: ['Spring Boot 3', 'React 18', 'PostgreSQL', 'Vite'],
+          status: 'Live'
+        }) + renderWatchtowerCard() + renderPlaceholderCard();
+        counter.innerHTML = `Total Proyek: <strong class="text-slate-200">1 Web + 1 Central CD</strong>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCatalog);
+  </script>
 </body>
 </html>

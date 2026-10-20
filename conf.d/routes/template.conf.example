@@ -1,0 +1,19 @@
+# ==============================================================================
+# Template Route Plug-in untuk Proyek Baru
+# ==============================================================================
+# Petunjuk:
+# 1. Salin file ini menjadi: conf.d/routes/<nama-proyek>.conf
+# 2. Ganti /nama-proyek/ dan http://nama-kontainer:port/ sesuai kontainer Anda
+# 3. Terapkan rute seketika tanpa restart: ./funnel.sh reload
+# ==============================================================================
+
+location /nama-proyek/ {
+    # Pastikan kontainer Anda terhubung ke network 'server-net'
+    proxy_pass http://nama-kontainer:3000/;
+    
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /nama-proyek;
+}

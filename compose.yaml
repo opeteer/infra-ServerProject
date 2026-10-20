@@ -85,6 +85,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # Proyek 2: Nimbus Web Downloader (Disajikan dari GitHub Container Registry)
+  nimbus:
+    image: ghcr.io/opeteer/nimbus:latest
+    container_name: nimbus-web
+    restart: unless-stopped
+    networks:
+      - server-net
+    environment:
+      - PORT=8000
+      - NIMBUS_PASSWORD=${NIMBUS_PASSWORD:-nimbus123}
+    volumes:
+      - nimbus_downloads:/app/downloads
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
 networks:
   server-net:
     name: server-net
@@ -92,3 +107,4 @@ networks:
 
 volumes:
   postgres_data:
+  nimbus_downloads:

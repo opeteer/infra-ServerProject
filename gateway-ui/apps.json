@@ -8,5 +8,15 @@
     "tags": ["Spring Boot 3", "React 18", "PostgreSQL", "Vite"],
     "status": "Live",
     "color": "emerald"
+  },
+  {
+    "id": "nimbus",
+    "name": "Nimbus Downloader",
+    "path": "/nimbus/",
+    "icon": "⚡",
+    "desc": "Platform self-hosted media & video downloader modern bertenaga yt-dlp, FastAPI, dan WebSockets.",
+    "tags": ["FastAPI", "Python 3.12", "yt-dlp", "GHCR", "Alpine"],
+    "status": "Live",
+    "color": "cyan"
   }
 ]

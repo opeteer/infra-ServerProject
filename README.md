@@ -36,7 +36,33 @@ gh secret set WATCHTOWER_WEBHOOK_URL --body "https://URL-DARI-LOGS.trycloudflare
 docker compose down
 ```
 
-### 5. Memeriksa Log Watchtower (Riwayat Auto-Deploy)
+### 6. Menjalankan dengan Tailscale Funnel (Alternatif Cloudflare)
+
+Infrastruktur ini juga mendukung **Tailscale Funnel** yang mengekspos Nginx Proxy (Port 8080 host) secara otomatis ke domain publik HTTPS Tailscale Anda.
+
+#### A. Persiapan Izin Operator (Hanya Perlu Sekali)
+Agar perintah Tailscale tidak memerlukan `sudo` setiap kali dijalankan:
 ```bash
-docker logs -f sia-watchtower
+sudo tailscale set --operator=$USER
+```
+
+#### B. Menggunakan Script Otomasi
+Gunakan script `funnel.sh` untuk otomatis menjalankan Docker Compose dan Tailscale Funnel:
+```bash
+# Menjalankan Docker Compose + Tailscale Funnel
+./funnel.sh start
+
+# Memeriksa status dan URL publik
+./funnel.sh status
+
+# Menghentikan Tailscale Funnel
+./funnel.sh stop
+```
+
+#### C. Menjadikan Service Otomatis Saat Boot (Systemd)
+Agar Tailscale Funnel otomatis aktif setiap kali server/laptop dinyalakan:
+```bash
+sudo cp tailscale-funnel-sia.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now tailscale-funnel-sia.service
 ```

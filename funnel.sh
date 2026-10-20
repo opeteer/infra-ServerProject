@@ -14,19 +14,15 @@ fi
 PROXY_PORT="${PROXY_PORT:-8080}"
 
 run_tailscale() {
-  # Coba eksekusi langsung sebagai current user
-  if tailscale "$@" 2>/dev/null; then
-    return 0
-  fi
+  tailscale "$@"
+}
 
-  # Jika gagal karena izin / access denied, coba dengan sudo
-  if command -v sudo >/dev/null 2>&1; then
-    sudo tailscale "$@"
-  else
-    echo "❌ Gagal menjalankan tailscale. Pastikan user memiliki hak operator:"
-    echo "   Jalankan sekali di terminal: sudo tailscale set --operator=\$USER"
-    return 1
-  fi
+cleanup_listeners() {
+  # Hentikan proses foreground tailscale yang mungkin masih berjalan di background
+  pkill -f "tailscale (funnel|serve)" 2>/dev/null || true
+  # Reset konfigurasi serve/funnel yang menggantung
+  tailscale funnel reset 2>/dev/null || true
+  tailscale serve reset 2>/dev/null || true
 }
 
 start_funnel() {
@@ -38,22 +34,42 @@ start_funnel() {
   fi
 
   echo "🌐 [2/3] Menjalankan Tailscale Funnel di port ${PROXY_PORT} (background mode)..."
-  if ! run_tailscale funnel --bg --yes "${PROXY_PORT}"; then
-    echo "❌ Gagal mengaktifkan Tailscale Funnel."
-    echo "💡 Solusi: Jalankan perintah berikut sekali saja di terminal host:"
+  
+  # Jalankan perintah dan tangkap outputnya
+  SET_OUTPUT=$(tailscale funnel --bg --yes "${PROXY_PORT}" 2>&1 || true)
+
+  # Jika terdeteksi konflik listener lama, bersihkan dan coba lagi
+  if echo "$SET_OUTPUT" | grep -q "foreground listener already exists"; then
+    echo "⚠️ Terdeteksi sesi listener foreground lama. Membersihkan sesi..."
+    cleanup_listeners
+    sleep 1
+    SET_OUTPUT=$(tailscale funnel --bg --yes "${PROXY_PORT}" 2>&1 || true)
+  fi
+
+  if echo "$SET_OUTPUT" | grep -q "Access denied"; then
+    echo "❌ Akses ditolak oleh Tailscale."
+    echo "💡 Solusi: Jalankan sekali perintah berikut di terminal:"
     echo "   sudo tailscale set --operator=\$USER"
+    exit 1
+  fi
+
+  if echo "$SET_OUTPUT" | grep -q "foreground listener already exists"; then
+    echo "❌ Masih terdapat foreground listener yang mengunci port 443 di tailscaled."
+    echo "💡 Solusi cepat: Restart daemon tailscaled untuk melepaskan listener lama:"
+    echo "   sudo systemctl restart tailscaled"
+    echo "   Setelah itu jalankan kembali: ./funnel.sh start"
     exit 1
   fi
 
   echo "✅ [3/3] Tailscale Funnel berhasil aktif secara otomatis!"
   echo ""
   echo "📋 Informasi Status & Public URL:"
-  run_tailscale funnel status
+  tailscale funnel status
 }
 
 stop_funnel() {
   echo "🛑 Menghentikan Tailscale Funnel..."
-  run_tailscale funnel reset
+  cleanup_listeners
   echo "✅ Tailscale Funnel telah dihentikan/direset."
 }
 

@@ -33,7 +33,18 @@ start_funnel() {
     echo "⚠️ Docker tidak ditemukan di PATH, melewati docker compose up."
   fi
 
-  echo "🌐 [2/3] Menjalankan Tailscale Funnel di port ${PROXY_PORT} (background mode)..."
+  echo "🤖 [2/4] Memastikan Rocky Provisioning Bot API berjalan..."
+  if ! pgrep -f "bot.py" >/dev/null 2>&1; then
+    nohup python3 "$DIR/bot.py" > "$DIR/bot.log" 2>&1 &
+    sleep 1
+    if pgrep -f "bot.py" >/dev/null 2>&1; then
+      echo "✅ Provisioning Bot aktif di port 8090!"
+    fi
+  else
+    echo "✅ Provisioning Bot sudah aktif di background."
+  fi
+
+  echo "🌐 [3/4] Menjalankan Tailscale Funnel di port ${PROXY_PORT} (background mode)..."
   
   # Jalankan perintah dan tangkap outputnya
   SET_OUTPUT=$(tailscale funnel --bg --yes "${PROXY_PORT}" 2>&1 || true)
@@ -61,7 +72,7 @@ start_funnel() {
     exit 1
   fi
 
-  echo "✅ [3/3] Tailscale Funnel berhasil aktif secara otomatis!"
+  echo "✅ [4/4] Tailscale Funnel & Gateway berhasil aktif secara otomatis!"
   echo ""
   echo "📋 Informasi Status & Public URL:"
   tailscale funnel status
@@ -70,7 +81,9 @@ start_funnel() {
 stop_funnel() {
   echo "🛑 Menghentikan Tailscale Funnel..."
   cleanup_listeners
-  echo "✅ Tailscale Funnel telah dihentikan/direset."
+  echo "🛑 Menghentikan Rocky Provisioning Bot..."
+  pkill -f "bot.py" 2>/dev/null || true
+  echo "✅ Seluruh layanan Gateway dan Bot telah dihentikan/direset."
 }
 
 status_funnel() {

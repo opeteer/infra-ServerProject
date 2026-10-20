@@ -178,11 +178,11 @@ EXPOSE 8080
 CMD ["/app/server"]
 ```
 
-### 3. File GitHub Actions Workflow (`.github/workflows/deploy.yml`)
-Salin file workflow berikut ke repositori baru Anda (`.github/workflows/deploy.yml`). Alur ini disesuaikan 100% dengan standar produksi yang sudah teruji di **`siaProject`**:
+### 3. File GitHub Actions Workflow Zero-Touch (`.github/workflows/deploy.yml`)
+Salin file workflow berikut ke repositori baru Anda (`.github/workflows/deploy.yml`). Alur ini **100% Zero-Touch**: Otomatis mem-build image, memanggil **Rocky Provisioning Bot** untuk mendaftarkan dan menyalakan kontainer (meniadakan semua langkah manual di server), lalu memicu Watchtower:
 
 ```yaml
-name: Build, Push to GHCR, and Trigger Server Deploy
+name: Build, Push to GHCR, and Auto-Deploy via Bot
 
 on:
   push:
@@ -218,22 +218,43 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/nama-proyek-web:latest
-            ghcr.io/${{ github.repository_owner }}/nama-proyek-web:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger Watchtower Webhook
+      # ======================================================================
+      # OTOMASI BOT: Meniadakan Bagian B (Mendaftarkan Kontainer, Rute & Web)
+      # ======================================================================
+      - name: Auto-Provision via Rocky Bot API
         if: ${{ env.WATCHTOWER_URL != '' }}
         env:
           WATCHTOWER_URL: ${{ secrets.WATCHTOWER_WEBHOOK_URL }}
         run: |
-          echo "🚀 Mengirim sinyal deploy asinkron ke Central Watchtower di server rocky..."
           BASE_URL="${WATCHTOWER_URL%/v1/update}"
+          echo "🤖 Menghubungi Rocky Provisioning Bot di ${BASE_URL}/api/provision..."
+          
+          # Payload otomatis membaca nama repo Anda
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "${{ github.event.repository.name }}",
+              "title": "${{ github.event.repository.name }}",
+              "image": "ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest",
+              "port": 3000,
+              "path": "/${{ github.event.repository.name }}/",
+              "icon": "🚀",
+              "desc": "Aplikasi ${{ github.event.repository.name }} di server rocky.",
+              "tags": "Web,Docker,AutoDeployed"
+            }' \
+            "${BASE_URL}/api/provision" || true
+          
+          echo "🚀 Memicu update Watchtower..."
           curl -f -X POST \
             -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
             "${BASE_URL}/v1/update?async=true" || true
-          echo "✅ Sinyal deployment berhasil diterima oleh server rocky!"
+          echo "✅ Sinyal deployment dan provisioning selesai!"
 ```
 
 ---

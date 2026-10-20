@@ -6,6 +6,8 @@ services:
     image: nginx:alpine
     container_name: server-proxy
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${PROXY_BIND_IP:-127.0.0.1}:${PROXY_PORT:-8080}:80"
     volumes:

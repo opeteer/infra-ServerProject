@@ -43,7 +43,7 @@ flowchart TD
 ### Karakteristik Utama Arsitektur:
 1. **Edge Security**: Tailscale Funnel mengisolasi server dari internet publik. Tidak ada port 80/443 yang dibuka di router fisik/IP publik langsung, melainkan melalui tunnel terenkripsi Tailscale.
 2. **Zero-Coupling Gateway**: `server-proxy` (Nginx) memuat rute secara dinamis dari file `conf.d/routes/*.conf`. Kerusakan sintaks pada satu proyek baru tidak akan mempengaruhi proyek lainnya.
-3. **Zero-Touch Provisioning Bot**: Bot API mandiri di endpoint `/api/provision` membaca payload GitHub Actions dan otomatis mendaftarkan kontainer baru tanpa perlu login ke terminal server.
+3. **Zero-Touch Provisioning Bot (V2)**: Bot API mandiri di endpoint `/api/provision` membaca payload GitHub Actions dan otomatis mendaftarkan kontainer baru tanpa perlu login ke terminal server. Dilengkapi arsitektur **Smart-Merge** non-destruktif, engine `ruamel.yaml` round-trip parser (komentar & format compose tetap terjaga utuh), dukungan WebSocket & streaming buffer, serta penguncian konkurensi (Thread Mutex Lock & POSIX file lock).
 4. **Single Central CD**: Hanya ada **1 instance Watchtower** untuk seluruh server yang mendengarkan endpoint `/v1/update`. Tidak ada overhead duplikasi proses CD.
 5. **Data-Driven Front Door**: Halaman beranda `/` menyajikan Web Grafis yang merender katalog proyek secara otomatis dari data JSON (`apps.json`).
 
@@ -326,7 +326,10 @@ Cukup jalankan satu baris perintah di server:
   --port 3000 \
   --path "/nama-proyek/" \
   --icon "🚀" \
-  --desc "Deskripsi singkat aplikasi"
+  --desc "Deskripsi singkat aplikasi" \
+  --websocket \
+  --volume "nama_volume:/path/di/kontainer" \
+  --env "KEY=VALUE"
 ```
 
 #### Opsi 2B: Manual Step-by-Step

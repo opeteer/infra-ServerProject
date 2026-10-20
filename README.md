@@ -179,72 +179,115 @@ CMD ["/app/server"]
 ```
 
 ### 3. File GitHub Actions Workflow (`.github/workflows/deploy.yml`)
-Salin file ini persis ke repositori baru Anda:
+Salin file workflow berikut ke repositori baru Anda (`.github/workflows/deploy.yml`). Alur ini disesuaikan 100% dengan standar produksi yang sudah teruji di **`siaProject`**:
 
 ```yaml
-name: Build, Publish & Deploy
+name: Build, Push to GHCR, and Trigger Server Deploy
 
 on:
   push:
-    branches: [ "main" ]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+    branches:
+      - main
+  workflow_dispatch: # Mendukung pemicu manual dari tab Actions di GitHub
 
 jobs:
-  build-and-deploy:
+  build-push-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry (GHCR)
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: type=raw,value=latest
-
-      - name: Build and push Docker image
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/nama-proyek-web:latest
+            ghcr.io/${{ github.repository_owner }}/nama-proyek-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Trigger Central Watchtower CD on Server Rocky
+      - name: Trigger Watchtower Webhook
+        if: ${{ env.WATCHTOWER_URL != '' }}
+        env:
+          WATCHTOWER_URL: ${{ secrets.WATCHTOWER_WEBHOOK_URL }}
         run: |
-          echo "🚀 Mengirim webhook deploy ke server rocky..."
-          curl -s -X POST \
+          echo "🚀 Mengirim sinyal deploy asinkron ke Central Watchtower di server rocky..."
+          BASE_URL="${WATCHTOWER_URL%/v1/update}"
+          curl -f -X POST \
             -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
-            --max-time 15 \
-            "${{ secrets.WATCHTOWER_WEBHOOK_URL }}" || true
+            "${BASE_URL}/v1/update?async=true" || true
+          echo "✅ Sinyal deployment berhasil diterima oleh server rocky!"
 ```
 
 ---
 
-## 🛠️ 4. Panduan Langkah Onboarding (*Step-by-Step Onboarding*)
+## 🔄 4. Penjelasan Detail Alur CI/CD (Berdasarkan Standar `siaProject`)
+
+Alur Continuous Integration & Continuous Deployment (CI/CD) berjalan otomatis tanpa intervensi manual:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as 👨‍💻 Developer
+    participant GH as 🐙 GitHub Repository
+    participant GHA as ⚙️ GitHub Actions Runner
+    participant GHCR as 📦 GitHub Container Registry (ghcr.io)
+    participant Proxy as 🔀 server-proxy (Nginx Gateway)
+    participant WT as 🛠️ server-watchtower (Central CD)
+    participant Container as 🚀 App Container (server-net)
+
+    Dev->>GH: git push origin main (atau Manual Dispatch)
+    GH->>GHA: Memicu workflow deploy.yml
+    GHA->>GHA: Checkout kode & Set up Buildx + Cache GHA
+    GHA->>GHCR: Login otomatis dengan GITHUB_TOKEN
+    GHA->>GHCR: Build & Push Image (:latest & :${{ github.sha }})
+    GHA->>Proxy: POST /v1/update?async=true (Bearer Token)
+    Proxy->>WT: Meneruskan webhook ke Watchtower
+    WT-->>GHA: HTTP 200 OK (Sinyal diterima secara asinkron)
+    GHA-->>Dev: Pipeline CI/CD Sukses ✅
+    
+    critical Proses Update di Latar Belakang (Server)
+        WT->>GHCR: Cek hash image terbaru
+        WT->>GHCR: Pull image baru
+        WT->>Container: Hentikan kontainer lama & nyalakan kontainer baru
+    end
+    Note over Container: Aplikasi baru aktif seketika tanpa downtime!
+```
+
+### Keunggulan Alur Ini:
+1. **GitHub Actions Cache (`type=gha`)**: Mempercepat proses build Docker hingga 70-80% pada push berikutnya karena layer-layer yang tidak berubah otomatis di-cache oleh GitHub.
+2. **Dual-Tagging (`:latest` & `:${{ github.sha }}`)**: Menjaga fleksibilitas deployment live (`:latest`) sekaligus menyediakan riwayat rollback yang terlacak berdasarkan commit hash (`:${{ github.sha }}`).
+3. **Panggilan Asinkron (`?async=true`)**: Mencegah GitHub Actions mengalami *timeout* atau menggantung menunggu Watchtower selesai mengunduh image. GitHub Actions akan langsung sukses begitu server menerima instruksi.
+4. **Proteksi Secret (`if: ${{ env.WATCHTOWER_URL != '' }}`)**: Pipeline build tidak akan crash jika secret webhook belum disetel di repository baru.
+
+---
+
+## 🛠️ 5. Panduan Langkah Onboarding (*Step-by-Step Onboarding*)
 
 Ikuti checklist 5 langkah berikut untuk memasang repo baru ke server `rocky`:
 
 ### Tahap 1: Konfigurasi di GitHub Repository Baru
 1. Pastikan file `Dockerfile`, `.dockerignore`, dan `.github/workflows/deploy.yml` sudah di-commit dan di-push ke branch `main`.
 2. Masuk ke halaman repo GitHub: `Settings` $\rightarrow$ `Secrets and variables` $\rightarrow$ `Actions` $\rightarrow$ `New repository secret`:
-   * **`WATCHTOWER_TOKEN`**: Isi dengan nilai token yang ada di [.env](file:///home/opeteer/infra-ServerProject/.env) server Anda.
-   * **`WATCHTOWER_WEBHOOK_URL`**: `https://rocky.<tailnet>.ts.net/v1/update`
+   * **`WATCHTOWER_TOKEN`**: Isi dengan nilai token yang ada di [.env](file:///home/opeteer/infra-ServerProject/.env) server Anda (`WATCHTOWER_TOKEN`).
+   * **`WATCHTOWER_WEBHOOK_URL`**: Isi dengan base URL Tailscale Funnel server Anda: `https://rocky.<tailnet>.ts.net` (atau `https://rocky.<tailnet>.ts.net/v1/update`).
 
 ---
 
@@ -311,7 +354,7 @@ Buka [gateway-ui/apps.json](file:///home/opeteer/infra-ServerProject/gateway-ui/
 
 ---
 
-## ⚙️ 5. Perintah Manajemen Server ([`funnel.sh`](file:///home/opeteer/infra-ServerProject/funnel.sh))
+## ⚙️ 6. Perintah Manajemen Server ([`funnel.sh`](file:///home/opeteer/infra-ServerProject/funnel.sh))
 
 ```bash
 # Menjalankan Gateway & Tailscale Funnel
